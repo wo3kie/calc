@@ -1,23 +1,23 @@
-# Copyright (C) 2015 Lukasz Czerwinski
+## Copyright (C) 2015 Lukasz Czerwinski
 
-# Calc
-Shell calculator in C++ boost::spirit  
+## Calc
+Shell calculator in C++ using boost::spirit  
 
-# Website
+## Website
 https://github.com/wo3kie/Calc
 
-# License
+## License
 For license please refer to LICENSE file  
 
-# Requirements
+## Requirements
 C++11  
 boost  
 
-# How to build it
+## How to build it
 make
 
-# Features
-## Operators
+## Features
+**Operators**
 +, -,
 \*, /  
 ^  
@@ -36,7 +36,7 @@ $./calc "1||(1/0)"
 1
 ```
 
-## Functions
+**Functions**
 sin, con, tan  
 ln, log2, log10  
 rad, deg  
@@ -51,13 +51,16 @@ $ ./calc "pi()*e()"
 8.53973
 ```
 
-## Placeholders
+**Placeholders**
 \_0 - number of arguments  
 \_1, \_2, ... \_9 - placeholders  
 
 ```{r, engine='bash'}
 $./calc "_1+_2" 1 2
 3
+
+$ ./calc "(_0==3)&&(_1+_2+_3)" 5 10
+0
 
 ./calc "(_0==3)&&(_1+_2+_3)" 5 10 15
 30

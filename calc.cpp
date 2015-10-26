@@ -220,6 +220,8 @@ namespace ast
             if( x.operator_ == "!=" ){
                 return lhs != rhs;
             }
+
+            return 0;
         }
 
         double operator()( Signed const & x ) const
