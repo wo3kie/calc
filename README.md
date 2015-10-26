@@ -17,7 +17,7 @@ boost
 make
 
 ## Features
-**Operators**
+**Operators**  
 +, -,
 \*, /  
 ^  
@@ -36,7 +36,7 @@ $./calc "1||(1/0)"
 1
 ```
 
-**Functions**
+**Functions**  
 sin, con, tan  
 ln, log2, log10  
 rad, deg  
@@ -51,7 +51,7 @@ $ ./calc "pi()*e()"
 8.53973
 ```
 
-**Placeholders**
+**Placeholders**  
 \_0 - number of arguments  
 \_1, \_2, ... \_9 - placeholders  
 
