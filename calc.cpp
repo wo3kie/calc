@@ -161,21 +161,21 @@ namespace ast
         {
             if( x.operator_ == "&&" )
             {
-                if( lhs > 0.000001 ){
-                    return boost::apply_visitor( *this, x.operand_ );
+                if( fabs( lhs ) < 0.000001 ){
+                    return 0;
                 }
                 else{
-                    return 0;
+                    return boost::apply_visitor( *this, x.operand_ );
                 }
             }
 
             if( x.operator_ == "||" )
             {
-                if( lhs > 0.000001 ){
-                    return lhs;
+                if( fabs( lhs ) < 0.000001 ){
+                    return boost::apply_visitor( *this, x.operand_ );
                 }
                 else{
-                    return boost::apply_visitor( *this, x.operand_ );
+                    return lhs;
                 }
             }
 
@@ -230,10 +230,17 @@ namespace ast
 
             switch( x.sign_ )
             {
-                case '-': return -rhs;
-                case '+': return +rhs;
-                case '!': return ! (bool)rhs;
-                default: BOOST_ASSERT( 0 );
+                case '-':
+                    return - rhs;
+
+                case '+':
+                    return + rhs;
+
+                case '!':
+                    return ( fabs( rhs ) < 0.000001 ) ? 1 : 0;
+
+                default:
+                    BOOST_ASSERT( 0 );
             }
         }
 
@@ -495,6 +502,9 @@ void test()
     assert( calc( "4/2" ) == 2 );
     assert( calc( "4.5/2" ) == 2.25 );
     assert( calc( "5/2" ) == 2.5 );
+
+    assert( calc( "!1" ) == 0 );
+    assert( calc( "!0" ) == 1 );
 
     assert( calc( "pi()" ) == double(M_PI) );
     assert( calc( "e()" ) == std::exp( 1.0 ) );
