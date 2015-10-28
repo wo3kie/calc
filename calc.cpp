@@ -56,8 +56,8 @@ namespace ast
 
     struct RightAssocExpr
     {
-        Operand base_;
-        boost::optional< Operand > exp_;
+        Operand left_;
+        boost::optional< Operand > right_;
     };
 
     struct FunctionCall
@@ -93,8 +93,8 @@ BOOST_FUSION_ADAPT_STRUCT(
 
 BOOST_FUSION_ADAPT_STRUCT(
     ast::RightAssocExpr,
-    ( ast::Operand, base_ )
-    ( boost::optional< ast::Operand >, exp_ )
+    ( ast::Operand, left_ )
+    ( boost::optional< ast::Operand >, right_ )
 )
 
 BOOST_FUSION_ADAPT_STRUCT(
@@ -117,7 +117,7 @@ BOOST_FUSION_ADAPT_STRUCT(
 
 namespace ast
 {
-    struct Eval
+    struct Calc
     {
     public:
 
@@ -126,10 +126,10 @@ namespace ast
     private:
 
         template< typename... TDoubles >
-        void assign( double * args, int index, double && head, TDoubles &&... tail )
+        void assign( double * args, int index, double head, TDoubles &&... tail )
         {
             args[ index ] = head;
-            assign( args, index+1, tail... );
+            assign( args, index+1, std::forward< TDoubles >( tail )... );
         }
 
         void assign( double * args, int index )
@@ -139,7 +139,7 @@ namespace ast
     public:
 
         template< typename... Doubles >
-        Eval( Doubles &&... ds )
+        Calc( Doubles &&... ds )
         {
             static_assert( sizeof...( Doubles ) < 10, "sizeof...(Doubles) has to be less then 10" );
             args_[ 0 ] = sizeof...( Doubles );
@@ -161,7 +161,7 @@ namespace ast
         {
             if( x.operator_ == "&&" )
             {
-                if( lhs ){
+                if( lhs > 0.000001 ){
                     return boost::apply_visitor( *this, x.operand_ );
                 }
                 else{
@@ -171,8 +171,8 @@ namespace ast
 
             if( x.operator_ == "||" )
             {
-                if( lhs ){
-                    return 1;
+                if( lhs > 0.000001 ){
+                    return lhs;
                 }
                 else{
                     return boost::apply_visitor( *this, x.operand_ );
@@ -244,13 +244,13 @@ namespace ast
 
         double operator()( RightAssocExpr const & x ) const
         {
-            double const base = boost::apply_visitor( *this, x.base_ );
+            double const base = boost::apply_visitor( *this, x.left_ );
 
-            if( ! x.exp_ ){
+            if( ! x.right_ ){
                 return base;
             }
             
-            double const exp = boost::apply_visitor( *this, x.exp_.get() );
+            double const exp = boost::apply_visitor( *this, x.right_.get() );
 
             return std::pow( base, exp );
         }
@@ -458,7 +458,7 @@ private:
 };
 
 template< typename... TDoubles>
-double eval(
+double calc(
     std::string const & expr,
     TDoubles... ds
 )
@@ -476,15 +476,77 @@ double eval(
 
     if( r && iter == end )
     {
-        ast::Eval eval( std::forward< TDoubles >( ds )... );
-        return eval( expression );
+        ast::Calc calc( std::forward< TDoubles >( ds )... );
+        return calc( expression );
     }
     
     throw std::runtime_error( "Parsing failed: " + std::string( iter, end ) );
 }
 
+void test()
+{
+    assert( calc( "1+2*3" ) == 7 );
+    assert( calc( "2^3^2" ) == 512 );
+    assert( calc( "(1+2)*(3+4)" ) == 21 );
+
+    assert( calc( "1+-1" ) == 0 );
+    assert( calc( "1--1" ) == 2 );
+
+    assert( calc( "4/2" ) == 2 );
+    assert( calc( "4.5/2" ) == 2.25 );
+    assert( calc( "5/2" ) == 2.5 );
+
+    assert( calc( "pi()" ) == double(M_PI) );
+    assert( calc( "e()" ) == std::exp( 1.0 ) );
+
+    assert( calc( "12||(1/0)" ) == 12 );
+    assert( calc( "0&&(1/0)" ) == 0 );
+    assert( calc( "1&&2" ) == 2 );
+    assert( calc( "2||1" ) == 2 );
+    assert( calc( "0||2" ) == 2 );
+
+    assert( calc( "1<2" ) == 1 );
+    assert( calc( "2<1" ) == 0 );
+
+    assert( calc( "1>2" ) == 0 );
+    assert( calc( "2>1" ) == 1 );
+
+    assert( calc( "1<=2" ) == 1 );
+    assert( calc( "2<=2" ) == 1 );
+    assert( calc( "3<=2" ) == 0 );
+
+    assert( calc( "1>=2" ) == 0 );
+    assert( calc( "2>=2" ) == 1 );
+    assert( calc( "3>=2" ) == 1 );
+
+    assert( calc( "abs(1)" ) == 1 );
+    assert( calc( "abs(-1)" ) == 1 );
+
+    assert( calc( "sin(rad(0))" ) == 0 );
+    assert(( fabs( calc( "sin(rad(90))" ) - 1.0 ) < 0.000001 ));
+
+    assert( calc( "cos(rad(0))" ) == 1 );
+    assert(( fabs( calc( "cos(rad(90))" ) - 0.0 ) < 0.0000001 ));
+
+    assert( calc( "log10(1)" ) == 0 );
+    assert( calc( "log10(10)" ) == 1 );
+    assert( calc( "log10(100)" ) == 2 );
+
+    assert( calc( "log2(1)" ) == 0 );
+    assert( calc( "log2(2)" ) == 1 );
+    assert( calc( "log2(4)" ) == 2 );
+
+    assert( calc( "_1+_2+_3+_4+_5+_6+_7+_8+_9", 1, 2, 3, 4, 5, 6, 7, 8, 9 ) == 45 );
+    assert( calc( "_0" ) == 0 );
+    assert( calc( "_0", 1 ) == 1 );
+    assert( calc( "_0", 1, 2 ) == 2 );
+    assert( calc( "_0", 1, 2, 3 ) == 3 );
+}
+
 int main( int argc, char* argv[] )
 {
+    test();
+
     using std::cout;
     using std::endl;
     using std::stof;
@@ -492,43 +554,43 @@ int main( int argc, char* argv[] )
     try
     {
         if( argc == 2 ){
-            cout << eval( argv[1] ) << endl;
+            cout << calc( argv[1] ) << endl;
         }
         else if( argc == 3 ){
-            cout << eval( argv[1], stof(argv[2]) ) << endl;
+            cout << calc( argv[1], stof(argv[2]) ) << endl;
         }
         else if( argc == 4 ){
-            cout << eval( argv[1], stof(argv[2]), stof(argv[3]) ) << endl;
+            cout << calc( argv[1], stof(argv[2]), stof(argv[3]) ) << endl;
         }
         else if( argc == 5 ){
-            cout << eval( argv[1], stof(argv[2]), stof(argv[3]),
+            cout << calc( argv[1], stof(argv[2]), stof(argv[3]),
                 stof(argv[4]) ) << endl;
         }
         else if( argc == 6 ){
-            cout << eval( argv[1], stof(argv[2]), stof(argv[3]),
+            cout << calc( argv[1], stof(argv[2]), stof(argv[3]),
                 stof(argv[4]), stof(argv[5]) ) << endl;
         }
         else if( argc == 7 ){
-            cout << eval( argv[1], stof(argv[2]), stof(argv[3]),
+            cout << calc( argv[1], stof(argv[2]), stof(argv[3]),
                 stof(argv[4]), stof(argv[5]), stof(argv[6]) ) << endl;
         }
         else if( argc == 8 ){
-            cout << eval( argv[1], stof(argv[2]), stof(argv[3]),
+            cout << calc( argv[1], stof(argv[2]), stof(argv[3]),
                 stof(argv[4]), stof(argv[5]), stof(argv[6]),
                 stof(argv[7]) ) << endl;
         }
         else if( argc == 9 ){
-            cout << eval( argv[1], stof(argv[2]), stof(argv[3]),
+            cout << calc( argv[1], stof(argv[2]), stof(argv[3]),
                 stof(argv[4]), stof(argv[5]), stof(argv[6]),
                 stof(argv[7]), stof(argv[8]) ) << endl;
         }
         else if( argc == 10 ){
-            cout << eval( argv[1], stof(argv[2]), stof(argv[3]),
+            cout << calc( argv[1], stof(argv[2]), stof(argv[3]),
                 stof(argv[4]), stof(argv[5]), stof(argv[6]),
                 stof(argv[7]), stof(argv[8]), stof(argv[9]) ) << endl;
         }
         else if( argc == 11 ){
-            cout << eval( argv[1], stof(argv[2]), stof(argv[3]),
+            cout << calc( argv[1], stof(argv[2]), stof(argv[3]),
                 stof(argv[4]), stof(argv[5]), stof(argv[6]),
                 stof(argv[7]), stof(argv[8]), stof(argv[9]),
                 stof(argv[10]) ) << endl;
