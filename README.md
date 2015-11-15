@@ -1,4 +1,4 @@
-## Copyright (C) 2015 Lukasz Czerwinski
+## Copyright (C) 2015 Łukasz Czerwiński
 
 ## Calc
 Shell calculator in C++ using boost::spirit  
@@ -6,17 +6,14 @@ Shell calculator in C++ using boost::spirit
 ## Website
 https://github.com/wo3kie/Calc
 
-## License
-For license please refer to LICENSE file  
-
 ## Requirements
 C++11  
 boost  
 
-## How to build it
+## How to build it?
 make
 
-## Features
+## How to run it?
 **Operators**  
 +, -,
 \*, /  
