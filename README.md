@@ -4,7 +4,7 @@
 Shell calculator in C++ using boost::spirit  
 
 ## Website
-https://github.com/wo3kie/Calc
+https://github.com/wo3kie/calc
 
 ## Requirements
 C++11  
